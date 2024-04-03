@@ -280,6 +280,7 @@ func (c DeviceCharacteristic) EnableNotifications(callback func(buf []byte)) err
 
 		err := c.adapter.bus.RemoveMatchSignal(c.propertiesChangedMatchOption)
 		c.adapter.bus.RemoveSignal(c.property)
+		close(c.property)
 		c.property = nil
 		return err
 	}
