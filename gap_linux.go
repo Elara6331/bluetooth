@@ -159,11 +159,9 @@ func (a *Adapter) Scan(callback func(*Adapter, ScanResult)) error {
 
 	propertiesChangedMatchOptions := []dbus.MatchOption{dbus.WithMatchInterface("org.freedesktop.DBus.Properties")}
 	a.bus.AddMatchSignal(propertiesChangedMatchOptions...)
-	defer a.bus.RemoveMatchSignal(propertiesChangedMatchOptions...)
 
 	newObjectMatchOptions := []dbus.MatchOption{dbus.WithMatchInterface("org.freedesktop.DBus.ObjectManager")}
 	a.bus.AddMatchSignal(newObjectMatchOptions...)
-	defer a.bus.RemoveMatchSignal(newObjectMatchOptions...)
 
 	// Go through all connected devices and present the connected devices as
 	// scan results. Also save the properties so that the full list of
@@ -380,11 +378,11 @@ func (a *Adapter) Connect(address Address, params ConnectionParams) (Device, err
 						if connected {
 							close(connectChan)
 						} else {
-							a.bus.RemoveMatchSignal(propertiesChangedMatchOptions...)
+
 							a.bus.RemoveSignal(signal)
 							close(signal)
 						}
-						device.adapter.connectHandler(device, connected)
+						a.connectHandler(device, connected)
 					}
 				}
 			}

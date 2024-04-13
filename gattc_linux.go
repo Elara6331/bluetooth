@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"sync"
 
 	"github.com/godbus/dbus/v5"
 )
@@ -133,12 +134,13 @@ type DeviceCharacteristic struct {
 	uuidWrapper
 	adapter                      *Adapter
 	characteristic               dbus.BusObject
+	propertyMtx                   sync.Mutex
 	property                     chan *dbus.Signal // channel where notifications are reported
 	propertiesChangedMatchOption dbus.MatchOption  // the same value must be passed to RemoveMatchSignal
 }
 
 // UUID returns the UUID for this DeviceCharacteristic.
-func (c DeviceCharacteristic) UUID() UUID {
+func (c *DeviceCharacteristic) UUID() UUID {
 	return c.uuidWrapper
 }
 
@@ -237,6 +239,9 @@ func (c *DeviceCharacteristic) WriteWithoutResponse(p []byte) (n int, err error)
 //
 // Users may call EnableNotifications with a nil callback to disable notifications.
 func (c *DeviceCharacteristic) EnableNotifications(callback func(buf []byte)) error {
+	c.propertyMtx.Lock()
+	defer c.propertyMtx.Unlock()
+
 	switch callback {
 	default:
 		if c.property != nil {
