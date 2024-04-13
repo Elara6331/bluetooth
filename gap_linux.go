@@ -345,11 +345,8 @@ func (a *Adapter) Connect(address Address, params ConnectionParams) (Device, err
 	// were connected between the two calls the signal wouldn't be picked up.
 	signal := make(chan *dbus.Signal)
 	a.bus.Signal(signal)
-	defer close(signal)
-	defer a.bus.RemoveSignal(signal)
 	propertiesChangedMatchOptions := []dbus.MatchOption{dbus.WithMatchInterface("org.freedesktop.DBus.Properties")}
 	a.bus.AddMatchSignal(propertiesChangedMatchOptions...)
-	defer a.bus.RemoveMatchSignal(propertiesChangedMatchOptions...)
 
 	// Read whether this device is already connected.
 	connected, err := device.device.GetProperty("org.bluez.Device1.Connected")
@@ -379,8 +376,15 @@ func (a *Adapter) Connect(address Address, params ConnectionParams) (Device, err
 						continue
 					}
 					changes := sig.Body[1].(map[string]dbus.Variant)
-					if connected, ok := changes["Connected"].Value().(bool); ok && connected {
-						close(connectChan)
+					if connected, ok := changes["Connected"].Value().(bool); ok {
+						if connected {
+							close(connectChan)
+						} else {
+							a.bus.RemoveMatchSignal(propertiesChangedMatchOptions...)
+							a.bus.RemoveSignal(signal)
+							close(signal)
+						}
+						device.adapter.connectHandler(device, connected)
 					}
 				}
 			}
