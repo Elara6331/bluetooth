@@ -262,18 +262,17 @@ func (c DeviceCharacteristic) EnableNotifications(callback func(buf []byte)) err
 				if sig.Name == "org.freedesktop.DBus.Properties.PropertiesChanged" {
 					interfaceName := sig.Body[0].(string)
 
-					if interfaceName == "org.bluez.Device1" && sig.Path == devicePath {
+					switch {
+					case interfaceName == "org.bluez.Device1" && sig.Path == devicePath:
 						changes := sig.Body[1].(map[string]dbus.Variant)
 
 						if connected, ok := changes["Connected"].Value().(bool); ok && !connected {
 							c.EnableNotifications(nil)
 							return
 						}
-					} else if interfaceName != "org.bluez.GattCharacteristic1" {
+					case interfaceName != "org.bluez.GattCharacteristic1":
 						continue
-					}
-
-					if sig.Path != c.characteristic.Path() {
+					case sig.Path != c.characteristic.Path():
 						continue
 					}
 
